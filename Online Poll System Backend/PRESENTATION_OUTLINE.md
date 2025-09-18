@@ -6,9 +6,9 @@
 **Online Poll System Backend**
 *A Comprehensive Django REST API with Optimized Database Design*
 
-- **Presenter**: [Your Name]
+- **Presenter**: Jacob Ndungu
 - **Program**: ALX Backend Engineering
-- **Date**: [Current Date]
+- **Date**: 18 Sep 2025
 - **Project**: ProDev Backend Engineering Capstone
 
 ---
@@ -32,7 +32,10 @@
 ### **Slide 3: Database Design - ERD Overview**
 **Entity Relationship Diagram**
 
-[Insert ERD Image from Draw.io]
+![Online Poll System ERD](Online%20Poll%20System%20ERD%20diagram-2_page-0001.jpg)
+
+*Complete database schema showing all entities, relationships, and field specifications*
+
 
 **Core Entities:**
 - 👤 **User** (Django built-in)
@@ -421,3 +424,4 @@ MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 ---
 
 *This presentation showcases a production-ready backend system demonstrating mastery of Django, REST APIs, database design, and industry best practices.*
+
