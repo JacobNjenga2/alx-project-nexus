@@ -5,14 +5,19 @@ from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
 from django.db.models import Count, Q, F
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django_ratelimit.decorators import ratelimit
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+import logging
 
 from .models import Poll, PollOption, Vote, VoteSession
 from .serializers import (
     PollCreateSerializer, PollDetailSerializer, PollListSerializer,
     VoteSerializer, PollResultSerializer, VoteStatsSerializer
 )
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 
 class PollListCreateView(generics.ListCreateAPIView):
@@ -154,11 +159,32 @@ class VoteCreateView(generics.CreateAPIView):
             ),
             400: openapi.Response(
                 description="Validation error (duplicate vote, expired poll, etc.)"
+            ),
+            429: openapi.Response(
+                description="Rate limit exceeded"
             )
         }
     )
+    @ratelimit(key='ip', rate='10/m', method='POST', block=True)
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        logger.info(f"Vote attempt from IP: {self.get_client_ip(request)}")
+        try:
+            response = super().post(request, *args, **kwargs)
+            if response.status_code == 201:
+                logger.info(f"Vote successfully cast for option: {request.data.get('option')}")
+            return response
+        except Exception as e:
+            logger.error(f"Error casting vote: {str(e)}")
+            raise
+    
+    def get_client_ip(self, request):
+        """Get client IP address from request"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
 
 
 class PollResultsView(generics.RetrieveAPIView):
@@ -321,3 +347,59 @@ def toggle_poll_status(request, pk):
     
     serializer = PollDetailSerializer(poll)
     return Response(serializer.data)
+
+
+@swagger_auto_schema(
+    method='get',
+    operation_description="Health check endpoint for monitoring",
+    responses={
+        200: openapi.Response(
+            description="Service is healthy",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'status': openapi.Schema(type=openapi.TYPE_STRING),
+                    'timestamp': openapi.Schema(type=openapi.TYPE_STRING),
+                    'version': openapi.Schema(type=openapi.TYPE_STRING),
+                    'database': openapi.Schema(type=openapi.TYPE_STRING),
+                }
+            )
+        )
+    }
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """
+    Health check endpoint for monitoring and load balancers.
+    Returns service status and basic system information.
+    """
+    from django.db import connection
+    from django.conf import settings
+    
+    try:
+        # Test database connection
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        
+        health_data = {
+            'status': 'healthy',
+            'timestamp': timezone.now().isoformat(),
+            'version': '1.0.0',
+            'database': 'connected',
+            'environment': 'production' if not settings.DEBUG else 'development'
+        }
+        
+        logger.info("Health check passed")
+        return Response(health_data, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return Response(
+            {
+                'status': 'unhealthy',
+                'timestamp': timezone.now().isoformat(),
+                'error': str(e)
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )

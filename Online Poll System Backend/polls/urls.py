@@ -4,6 +4,9 @@ from . import views
 app_name = 'polls'
 
 urlpatterns = [
+    # Health check endpoint
+    path('health/', views.health_check, name='health-check'),
+    
     # Poll management endpoints
     path('polls/', views.PollListCreateView.as_view(), name='poll-list-create'),
     path('polls/<int:pk>/', views.PollDetailView.as_view(), name='poll-detail'),

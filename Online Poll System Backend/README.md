@@ -27,6 +27,10 @@ This project implements a scalable backend for an online poll system as part of 
 - **Caching Strategy**: Cache invalidation for real-time result updates
 - **Statistics & Analytics**: Comprehensive voting statistics and poll analytics
 - **Admin Interface**: Django admin with enhanced poll management capabilities
+- **Rate Limiting**: API rate limiting to prevent abuse (10 votes per minute per IP)
+- **Comprehensive Logging**: Detailed logging for monitoring and debugging
+- **Health Monitoring**: Health check endpoint for load balancers and monitoring
+- **Security Headers**: Enhanced security with proper HTTP headers
 
 ## 🛠 Technologies Used
 
@@ -36,6 +40,8 @@ This project implements a scalable backend for an online poll system as part of 
 - **drf-yasg**: Swagger/OpenAPI documentation generation
 - **django-cors-headers**: Cross-Origin Resource Sharing (CORS) handling
 - **python-decouple**: Environment variable management
+- **django-ratelimit**: API rate limiting for abuse prevention
+- **django-extensions**: Additional Django utilities
 
 ## 📋 API Endpoints
 
@@ -64,6 +70,11 @@ GET    /api/v1/user/polls/               # Get user's created polls
 ### Analytics
 ```
 GET    /api/v1/statistics/               # Get voting statistics
+```
+
+### System Monitoring
+```
+GET    /api/v1/health/                   # Health check endpoint
 ```
 
 ### API Documentation
